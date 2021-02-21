@@ -128,61 +128,88 @@
                 </div>
             </div>
         </div>
-        
-        @section('scripts')
-    <script>
-        // Retrieve Firebase Messaging object.
-        const messaging = firebase.messaging();
-        // Add the public key generated from the console here.
-        messaging.usePublicVapidKey("AAAAUyMsf5o:APA91bESJLSyDnb50jKJ7V6NA9ojkboCb_Q31mQoS3FbjS2Maed4F0GfHSX9SGj-aN0SpG9rHJxKfW14XCCZIw1reyXfEM032KdZnx8ZNc5pBLZFq80WNG7qbQ_f8uK7ShSYy92PKQeI");
+        <form action="{{ route('send.notification') }}" method="POST">
+                        @csrf
+                        <div class="form-group">
+                            <label>Title</label>
+                            <input type="text" class="form-control" name="title">
+                        </div>
+                        <div class="form-group">
+                            <label>Body</label>
+                            <textarea class="form-control" name="body"></textarea>
+                          </div>
+                        <button type="submit" class="btn btn-primary">Send Notification</button>
+                    </form>
+       
+     
+   <script src="https://www.gstatic.com/firebasejs/7.23.0/firebase.js"></script>
+   <script src="https://www.gstatic.com/firebasejs/8.2.8/firebase-app.js"></script>
 
+<!-- TODO: Add SDKs for Firebase products that you want to use
+     https://firebase.google.com/docs/web/setup#available-libraries -->
+<script src="https://www.gstatic.com/firebasejs/8.2.8/firebase-analytics.js"></script>
 
-        function sendTokenToServer(fcm_token) {
-            const user_id = '{{auth()->user()->id}}';
+   <script>
+     
+       var firebaseConfig = {
+        apiKey: "AIzaSyCi__UdANWo7bDvTFCGOEtXvMIoDSxscZg",
+    authDomain: "live-chat-4014a.firebaseapp.com",
+    databaseURL: "https://live-chat-4014a-default-rtdb.firebaseio.com",
+    projectId: "live-chat-4014a",
+    storageBucket: "live-chat-4014a.appspot.com",
+    messagingSenderId: "357072404378",
+    appId: "1:357072404378:web:2f0b4b73e3d4b9a0ea4423",
+    measurementId: "G-NG59Q52QD7"
+       };
          
-            axios.post('/api/save-token', {
-                fcm_token, user_id
-            })
-                .then(res => {
-                    console.log(res);
-                })
-
-        }
-
-        function retreiveToken(){
-            messaging.getToken().then((currentToken) => {
-                if (currentToken) {
-                    sendTokenToServer(currentToken);
-                    // updateUIForPushEnabled(currentToken);
-                } else {
-                    // Show permission request.
-                    //console.log('No Instance ID token available. Request permission to generate one.');
-                    // Show permission UI.
-                    //updateUIForPushPermissionRequired();
-                    //etTokenSentToServer(false);
-                    alert('You should allow notification!');
-                }
-            }).catch((err) => {
-                console.log(err.message);
-                // showToken('Error retrieving Instance ID token. ', err);
-                // setTokenSentToServer(false);
-            });
-        }
-        retreiveToken();
-        messaging.onTokenRefresh(()=>{
-            retreiveToken();
-
-
-        });
-
-        messaging.onMessage((payload)=>{
-            console.log('Message received');
-            console.log(payload);
-
-            location.reload();
-        });
-
-    </script>
-@endsection
+       firebase.initializeApp(firebaseConfig);
+       const messaging = firebase.messaging();
+     
+       function initFirebaseMessagingRegistration() {
+               messaging
+               .requestPermission()
+               .then(function () {
+                   return messaging.getToken()
+               })
+               .then(function(token) {
+                   console.log(token);
+      
+                   $.ajaxSetup({
+                       headers: {
+                           'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                       }
+                   });
+     
+                   $.ajax({
+                       url: '{{ route("save-token") }}',
+                       type: 'POST',
+                       data: {
+                           token: token
+                       },
+                       dataType: 'JSON',
+                       success: function (response) {
+                           alert('Token saved successfully.');
+                       },
+                       error: function (err) {
+                           console.log('User Chat Token Error'+ err);
+                       },
+                   });
+     
+               }).catch(function (err) {
+                   console.log('User Chat Token Error'+ err);
+               });
+        }  
+         
+       messaging.onMessage(function(payload) {
+           const noteTitle = livechat.notification.title;
+           const noteOptions = {
+               body: livechat.notification.body,
+               icon: livechat.notification.icon,
+           };
+           new Notification(noteTitle, noteOptions);
+       });
+      
+   </script>
+  
     </body>
 </html>

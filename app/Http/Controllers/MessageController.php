@@ -22,12 +22,26 @@ class MessageController extends Controller
     public function store(storeMessageRequest $request)
     {
       
+        $user = $request->user();
+
         $message= new Message();
         $message->body=$request['body'];
         $message->read=false;
-        $message->user_id=1;
+        $message->user_id=$user->id;
         $message->conversation_id=$request['conversation_id'];
         $message->save();
+
+        // Send notification to other end
+        $conversation = $message->conversation;
+        $receiver_id = $conversation->user_id;
+
+        if ($conversation->user_id == $user->id) {
+            $receiver_id = $conversation->second_useer_id; 
+        } 
+
+        $receiver = User::find($receiver_id);
+ 
+        sendNotification([$receiver->fcm_token], $message->body);
 
         return new MessageResource($message);
 
